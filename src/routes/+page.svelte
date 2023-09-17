@@ -7,6 +7,10 @@
 	import logo from '$lib/images/logo.png';
 	import Patient from '$lib/helpers/User';
 
+	import graph1 from '$lib/images/graph1.png';
+	import graph2 from '$lib/images/graph2.png';
+	import graph3 from '$lib/images/graph3.png';
+
 	const PATH = 'http://10.189.95.23:8000/upload/notes';
 
 	// global variables
@@ -16,7 +20,7 @@
 	 */
 	let inputtedFiles = [];
 
-    $: console.log(inputtedFiles);
+	$: console.log(inputtedFiles);
 
 	/**
 	 * @type {typeof import('apexcharts').default}
@@ -40,8 +44,13 @@
 	let doctorDashboard = false;
 	let patientPortal = false;
 
-    $: if (!(doctorPortal && patientPortal)) {
-        inputtedFiles = [];
+	$: if (!(doctorPortal && patientPortal)) {
+		inputtedFiles = [];
+	}
+
+    let navbarActive = 'text-white'
+    $: if (doctorDashboard) {
+        navbarActive = 'text-black'
     }
 
 	// page loaded boolean
@@ -62,7 +71,7 @@
 		if (pageLoaded) {
 			if (doctorPortal) {
 				scrollToElement('doctor');
-                createFileDrop('file-drop');
+				createFileDrop('file-drop');
 			} else if (patientPortal) {
 				scrollToElement('user');
 			}
@@ -82,35 +91,12 @@
 		// Add JavaScript to handle file upload
 		const fileDrop = document.getElementById(fileDropID);
 
-        // console.log(fileDrop);
+		// console.log(fileDrop);
 
 		if (fileDrop !== null) {
-			fileDrop.addEventListener('dragover', (e) => {
+			fileDrop.addEventListener('change', (e) => {
 				e.preventDefault();
-				fileDrop.classList.add('border-blue-600');
-			});
-
-			fileDrop.addEventListener('dragleave', () => {
-				fileDrop.classList.remove('border-blue-600');
-			});
-
-			fileDrop.addEventListener('drop', (e) => {
-                e.preventDefault();
-
-                console.log("SUBMMITINGD ASLDSALK LSK");
-				fileDrop.classList.remove('border-blue-600');
-				const file = e.dataTransfer.files[0];
-                if (file.type !== 'application/pdf') {
-                    alert('Please upload a PDF file!');
-                    return;
-                }
-                if (inputtedFiles.includes(file)) {
-                    alert('You have already uploaded this file!');
-                }
-                else {
-                    handleFileUpload(file, fileDrop);
-                }
-				
+				handleFileUpload(e.target.files[0]);
 			});
 		}
 	};
@@ -156,27 +142,24 @@
 	 * @param files
 	 * @param element
 	 */
-	const handleFileUpload = (/** @type {File} */ file, /** @type {HTMLElement} */ element) => {
+	const handleFileUpload = (/** @type {File} */ file) => {
 		// we can change all these class adds / inner html changes
 		// element.classList.add('bg-gray-600');
 		// element.innerHTML = '<h1 class="text-white">Uploaded</h1>';
 		console.log('Uploaded file:', file);
 
-        // create a set from the inputted files
-        const inputtedFileNames = inputtedFiles.map((f) => f.name);
-        const fileNamesSet = new Set(inputtedFileNames);
+		// create a set from the inputted files
+		const inputtedFileNames = inputtedFiles.map((f) => f.name);
+		const fileNamesSet = new Set(inputtedFileNames);
 
-        // if the file is already in the set, don't add it
-        if (fileNamesSet.has(file.name)) {
-            alert('You have already uploaded this file!');
-            return;
-        }
-        else {
-            inputtedFiles = [...inputtedFiles, file];
-        }
-        
+		// if the file is already in the set, don't add it
+		if (fileNamesSet.has(file.name)) {
+			alert('You have already uploaded this file!');
+			return;
+		} else {
+			inputtedFiles = [...inputtedFiles, file];
+		}
 
-		
 		// Add your file handling logic here
 	};
 
@@ -184,12 +167,13 @@
 		createDoctorPortal();
 		// this is just a test
 		doctorDashboard = true;
+        
 	};
 
 	const deleteFile = (/** @type {File} */ file) => {
-        if (inputtedFiles.length == 1) {
-            inputtedFiles = [];
-        }
+		if (inputtedFiles.length == 1) {
+			inputtedFiles = [];
+		}
 		if (inputtedFiles.length > 1) {
 			inputtedFiles = inputtedFiles.filter((f) => f.name !== file.name);
 		}
@@ -298,12 +282,12 @@
 	<div class="flex justify-between p-10 bg-transparent w-full z-10 top-0 fixed">
 		<div class="flex items-center">
 			<img src={logo} alt="" class="w-20" />
-			<h1 class="text-white font-bold text-5xl">MedLingua</h1>
+			<h1 class="{navbarActive} font-bold text-5xl">MedLingua</h1>
 		</div>
 		<div class="hidden md:flex items-center">
 			{#if !(doctorPortal || patientPortal)}
 				<button
-					class="flex items-center justify-center bg-blue-500 hover:bg-blue-800 text-white px-6 font-bold text-xl md:text-3xl py-3 rounded-full transition duration-300 transform hover:scale-105"
+					class="flex items-center justify-center bg-blue-500 hover:bg-blue-800 text-white px-6 font-bold text-md md:text-2xl py-2 rounded-full transition duration-300 transform hover:scale-105"
 					on:click={() => (loginPopup = true)}
 				>
 					<span class="p-0">Login</span>
@@ -326,8 +310,11 @@
 
 	<div class="flex-grow flex flex-col-reverse md:flex-row items-center justify-between ml-20">
 		<div class="max-w-2xl text-center md:text-left ml-10">
-			<h1 class="text-4xl md:text-6xl font-bold mb-4 text-white">Unified Insights</h1>
-			<p class="text-lg md:text-xl mb-8 text-white">Endless possibilities for healthier lives.</p>
+			<h1 class="text-4xl md:text-6xl font-bold mb-4 text-white">Welcome to MedLingua</h1>
+			<p class="text-lg md:text-xl mb-8 text-white">
+				MedLingua uses advanced AI to merge medical notes and clinical data, providing accurate
+				health predictions in simple terms.
+			</p>
 			<div class="flex justify-center md:justify-start mb-4">
 				<a
 					href="#"
@@ -484,7 +471,7 @@
 							</div>
 							<button
 								type="submit"
-								class="w-full text-white bg-black hover:bg-white text-black focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg px-5 py-2.5 text-center dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white dark:focus:ring-primary-800 text-xl"
+								class="w-full text-white bg-black hover:bg-white hover:text-black hover:border-2 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg px-5 py-2.5 text-center dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white dark:focus:ring-primary-800 text-xl"
 								>Sign in</button
 							>
 							<p class="text-sm font-light text-gray-500 dark:text-gray-400">
@@ -503,93 +490,233 @@
 </div>
 
 {#if doctorPortal}
-	<div
-	>
+	<div>
 		{#if !doctorDashboard}
-        <div
-		id="doctor_portal"
-		class="min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d] flex items-center justify-center"
-	>
-			<div class="flex flex-col justify-around gap-y-10">
-				<div class="flex flex-col gap-y-5 items-center">
-					<label for="patient-id" class="block mt-5 text-xl text-white">Patient ID:</label>
-					<input
-						type="text"
-						id="patient-id"
-						bind:value={patientID}
-						placeholder="123456789"
-						class="w-full border bg-white border-gray-300 rounded-lg px-3 py-2"
-					/>
-				</div>
-				<h1 class="text-white font-bold text-5xl">Patient File Upload</h1>
-				<div class="bg-white p-10 rounded-lg shadow-lg">
-					<label for="file-upload" class="block text-xl mb-4 text-center"
-						>Drag and Drop Your Medical Notes</label
-					>
-					<input type="file" id="file-upload" class="hidden" />
-					<div
-						id="file-drop"
-						class="w-full h-32 border-2 border-white-400 flex items-center justify-center"
-					>
-						<p class="text-gray-600">Drop your file here</p>
+			<div
+				id="doctor_portal"
+				class="min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d] flex items-center justify-center"
+			>
+				<div class="flex flex-col justify-around gap-y-10">
+					<div class="flex flex-col gap-y-5 items-center">
+						<label for="patient-id" class="block mt-5 text-xl text-white">Patient ID:</label>
+						<input
+							type="text"
+							id="patient-id"
+							bind:value={patientID}
+							placeholder="123456789"
+							class="w-full border bg-white border-gray-300 rounded-lg px-3 py-2"
+						/>
 					</div>
-					<div id="uploaded_doctors_notes" class="flex justify-center flex-col {isFileHidden}">
-						<p class="font-bold mt-5 text-gray-900">Uploaded Files:</p>
+					<h1 class="text-white font-bold text-5xl">Patient File Upload</h1>
+					<div class="bg-white p-10 rounded-lg shadow-lg">
+						<div class="flex items-center justify-center w-full">
+							<label
+								for="file-drop"
+								class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+							>
+								<div class="flex flex-col items-center justify-center pt-5 pb-6">
+									<svg
+										class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
+										aria-hidden="true"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 20 16"
+									>
+										<path
+											stroke="currentColor"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+										/>
+									</svg>
+									<p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+										<span class="font-semibold">Click to upload</span>
+									</p>
+									<p class="text-xs text-gray-500 dark:text-gray-400">PDF</p>
+								</div>
+								<input id="file-drop" type="file" class="hidden" />
+							</label>
+						</div>
+						<div id="uploaded_doctors_notes" class="flex justify-center flex-col {isFileHidden}">
+							<p class="font-bold mt-5 text-gray-900">Uploaded Files:</p>
 
-						<ul
-							class="mt-3 w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-						>
-							{#each inputtedFiles as file}
-                            <div class="flex justify-between w-full px-4 py-2 border-b border-gray-200 rounded-t-lg dark:border-gray-600">
-                                {file.name}
-                                <button on:click={() => deleteFile(file)}
-                                    ><i class="pl-2 fa-solid fa-trash" /></button
-                                >
-                            </div>
-
-							{/each}
-						</ul>
-						<button on:click={() => onDoctorFileSubmit()} class="mt-3 rounded-lg bg-blue-800 text-white px-6 py-3 text-center"
-							>Submit</button
-						>
+							<ul
+								class="mt-3 w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+							>
+								{#each inputtedFiles as file}
+									<div
+										class="flex justify-between w-full px-4 py-2 border-b border-gray-200 rounded-t-lg dark:border-gray-600"
+									>
+										{file.name}
+										<button on:click={() => deleteFile(file)}
+											><i class="pl-2 fa-solid fa-trash" /></button
+										>
+									</div>
+								{/each}
+							</ul>
+							<button
+								on:click={() => onDoctorFileSubmit()}
+								class="mt-3 rounded-lg bg-blue-800 text-white px-6 py-3 text-center">Submit</button
+							>
+						</div>
 					</div>
 				</div>
 			</div>
+		{:else}
+			<div
+				id="doctor_portal"
+				class="flex min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d] justify-center"
+			>
+
+            <!-- <div class="flex flex-col items-start justify-center gap-y-6 mb-5">
+    
+                <div class="block max-w-lg p-3 self-middle bg-white rounded-lg shadow ">
+                    <h1 class="text-5xl text-black p-0 m-0 ">{name}</h1>
+                </div>
+                <div class="flex flex-row justify-around gap-x-6 p-6">
+                    <div class="block max-w-lg p-6 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white rounded-lg  max-h-[400px]">
+                            <h2>Graph 1</h2>
+    
+                            <img src={graph1} alt="Graph 1" width="300" height="300"  />
+                        </div>
+                    </div>
+                    <div class="block max-w-lg p-6 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white rounded-lg  max-h-[400px]">
+                            <h2>Graph 2</h2>
+    
+                            <img src={graph2} alt="Graph 1" width="300" height="300"  />
+                        </div>
+                    </div>
+                    <div class="block max-w-lg p-6 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white rounded-lg  max-h-[400px]">
+                            <h2>Graph 3</h2>
+    
+                            <img src={graph3} alt="Graph 1" width="300" height="300"  />
+                        </div>
+                    </div>
+                </div>
+               
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <div class="block max-w-lg p-3 bg-gray-100 rounded-lg shadow mb-5">
+                    <h1 class="text-5xl text-black text-bold p-0 m-0">Your Name</h1>
+                </div>
+            
+                <div class="flex flex-row justify-around  p-6 gap-x-4">
+                    <div class="block max-w-lg p-6 opacity-50 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="opacity-100 rounded-lg max-h-[400px]">
+                            <h2>Graph 1</h2>
+                            <img src="{graph1}" alt="Graph 1" width="300" height="300" />
+                        </div>
+                    </div>
+            
+                    <div class="block max-w-lg p-6 opacity-50 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white rounded-lg max-h-[400px]">
+                            <h2>Graph 2</h2>
+                            <img src="{graph2}" alt="Graph 2" width="300" height="300" />
+                        </div>
+                    </div>
+            
+                    <div class="block max-w-lg p-6 opacity-50 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white rounded-lg max-h-[400px]">
+                            <h2>Graph 3</h2>
+                            <img src="{graph3}" alt="Graph 3" width="300" height="300" />
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+            <div class="flex flex-col items-center justify-center">
+                <div class="block max-w-2xl text-center p-3 bg-white rounded-lg shadow mb-3">
+                    <h1 class="text-4xl text-black font-bold p-0 m-0">Welcome to Your Medical Dashboard</h1>
+                </div> 
+                <div class="block max-w-lg p-3 bg-white bg-opacity-60 rounded-lg shadow mb-3">
+                    <h1 class="text-2xl text-black font-bold p-0 m-0">Patient: {name}</h1>
+                </div> 
+            <div class="flex flex-row gap-x-6 bg-white bg-opacity-60 justify-center items-center text-black mb-3 rounded-lg px-3 py-2 ">
+                <h1 class="text-xl">Address: Something St. - Age: 20</h1>
             </div>
-            {:else}
-            <div class="flex flex-row min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d]">
-                <!-- Left side with graphs -->
-                <div class="w-1/2 flex flex-col justify-center">
-                  <!-- Graph 1 -->
-                  <div class="bg-white p-4 mb-4 rounded-lg shadow">
-                    <!-- Replace with your graph 1 image -->
-                    <img src="graph1.png" alt="Graph 1" class="w-full h-auto" />
-                  </div>
-                  <!-- Graph 2 -->
-                  <div class="bg-white p-4 mb-4 rounded shadow">
-                    <!-- Replace with your graph 2 image -->
-                    <img src="graph2.png" alt="Graph 2" class="w-full h-auto" />
-                  </div>
-                  <!-- Graph 3 -->
-                  <div class="bg-white p-4 mb-4 rounded shadow">
-                    <!-- Replace with your graph 3 image -->
-                    <img src="graph3.png" alt="Graph 3" class="w-full h-auto" />
-                  </div>
+            <div class="block max-w-lg p-3 bg-white max-w-2xl text-center rounded-lg shadow mb-1 mt-3">
+                <h1 class="text-3xl text-black p-0 m-0 italic">Medical Insights</h1>
+            </div> 
+                <div class="flex flex-row justify-around p-6 gap-x-4">
+                    <div class="block max-w-lg p-6 bg-white  rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white bg-opacity-100 rounded-lg max-h-[400px]">
+                            <h2>Graph 1</h2>
+                            <img src="{graph1}" alt="Graph 1" width="500" height="500" />
+                        </div>
+                    </div>
+            
+                    <div class="block max-w-lg p-6 bg-white rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white bg-opacity-100 rounded-lg max-h-[400px]">
+                            <h2>Graph 2</h2>
+                            <img src="{graph2}" alt="Graph 2" width="500" height="500" />
+                        </div>
+                    </div>
+            
+                    <div class="block max-w-lg p-6 bg-white  rounded-lg shadow max-h-[400px]">
+                        <div class="bg-white bg-opacity-100 rounded-lg max-h-[400px]">
+                            <h2>Graph 3</h2>
+                            <img src="{graph3}" alt="Graph 3" width="500" height="500" />
+                        </div>
+                    </div>
                 </div>
-              
-                <!-- Right side with text -->
-                <div class="w-1/2 flex flex-col justify-center p-6">
-                  <div class="flex">
-                    <h1 class="text-white text-2xl font-bold">Patient Dashboard</h1>
-                  </div>
-                  <div class="text-white mt-4">
-                    <!-- Insert your bunch of text here -->
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et turpis vel tellus porta tristique. Quisque
-                    vitae fermentum dolor. Donec eget ligula vel justo tempus pretium. Nunc ut convallis purus, nec tristique
-                    felis. ...
-                  </div>
+                
+                <div class="flex flex-col w-50 bg-white m-4 rounded-lg justify-center items-center px-3 py-2 ">
+                    <h1 class="text-black text-2xl font-bold">Patient Summary</h1>
+                    <p class="text-black">Hello</p>
                 </div>
-              </div>
+            </div>
+            
+            
+            
+            
+            <!-- <div class="flex justify-aroun align-middle">
+				<div class="w-1/2 flex flex-col mt-10 h-full gap-y-6 ml-10 align-middle">
+
+                    <div class="block max-w-sm p-6 bg-white rounded-lg shadow ">
+                        <div class="bg-white rounded-lg h-auto">
+                            <h2>Graph 1</h2>
+    
+                            <img src={graph1} alt="Graph 1" class="w-auto h-auto" />
+                        </div>
+                    </div>
+
+                    <div class="block max-w-sm p-6 bg-white rounded-lg shadow ">
+                        <div class="bg-white rounded-lg h-auto">
+                            <h2>Graph 1</h2>
+    
+                            <img src={graph2} alt="Graph 1" class="w-auto h-auto" />
+                        </div>
+                    </div>
+                    <div class="block max-w-sm p-6 bg-white rounded-lg shadow ">
+                        <div class="bg-white rounded-lg h-auto">
+                            <h2>Graph 1</h2>
+    
+                            <img src={graph3} alt="Graph 1" class="w-auto h-auto" />
+                        </div>
+                    </div>
+
+
+					
+				</div>
+                			
+				<div class="w-1/2 flex flex-col justify-center p-6">
+					<div class="flex">
+						<h1 class="text-white text-2xl font-bold">Patient Dashboard</h1>
+					</div>
+					<div class="text-white mt-4">
+
+						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et turpis vel tellus porta
+						tristique. Quisque vitae fermentum dolor. Donec eget ligula vel justo tempus pretium. Nunc
+						ut convallis purus, nec tristique felis. ...
+					</div>
+				</div>
+            </div> -->
+				
+
+			</div>
 		{/if}
 	</div>
 {/if}

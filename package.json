@@ -30,6 +30,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"apexcharts": "^3.42.0"
+		"apexcharts": "^3.42.0",
+		"svelte-file-dropzone": "^2.0.2"
 	}
 }
