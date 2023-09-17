@@ -1,11 +1,11 @@
 <script>
 	// imports
-	import { onMount, afterUpdate } from 'svelte';
-    import PatientList from '$lib/components/PatientList.svelte';
+	import { onMount, afterUpdate, tick } from 'svelte';
+	import UserPortal from '$lib/components/UserPortal.svelte';
 	// image imports
 	import heroIMG from '$lib/images/hero_logo.png';
 	import logo from '$lib/images/logo.png';
-    import Patient from '$lib/helpers/User';
+	import Patient from '$lib/helpers/User';
 
 	const PATH = 'http://10.189.95.23:8000/upload/notes';
 
@@ -15,6 +15,8 @@
 	 * @type {File[]}
 	 */
 	let inputtedFiles = [];
+
+    $: console.log(inputtedFiles);
 
 	/**
 	 * @type {typeof import('apexcharts').default}
@@ -35,17 +37,24 @@
 
 	// portal booleans
 	let doctorPortal = false;
-	let userPortal = false;
+	let doctorDashboard = false;
+	let patientPortal = false;
+
+    $: if (!(doctorPortal && patientPortal)) {
+        inputtedFiles = [];
+    }
 
 	// page loaded boolean
 	let pageLoaded = false;
 
-    // user id
+	// patient id
 
-    /**
-     * @type {number}
-     */
-    let patientID;
+	/**
+	 * @type {number}
+	 */
+	let patientID;
+
+	let name = '';
 
 	// lifecycle
 
@@ -53,7 +62,8 @@
 		if (pageLoaded) {
 			if (doctorPortal) {
 				scrollToElement('doctor');
-			} else if (userPortal) {
+                createFileDrop('file-drop');
+			} else if (patientPortal) {
 				scrollToElement('user');
 			}
 		}
@@ -64,12 +74,15 @@
 		await import('apexcharts').then((ApexCharts) => {
 			apexcharts = ApexCharts;
 		});
-		createFileDrop('file-drop');
 	});
+
+	// functions
 
 	const createFileDrop = (/** @type {string} */ fileDropID) => {
 		// Add JavaScript to handle file upload
 		const fileDrop = document.getElementById(fileDropID);
+
+        // console.log(fileDrop);
 
 		if (fileDrop !== null) {
 			fileDrop.addEventListener('dragover', (e) => {
@@ -82,19 +95,26 @@
 			});
 
 			fileDrop.addEventListener('drop', (e) => {
-				e.preventDefault();
+                e.preventDefault();
+
+                console.log("SUBMMITINGD ASLDSALK LSK");
 				fileDrop.classList.remove('border-blue-600');
 				const file = e.dataTransfer.files[0];
-				handleFileUpload(file, fileDrop);
-			});
-			fileDrop.addEventListener('change', (e) => {
-				const file = e.target.files[0];
-				handleFileUpload(file, fileDrop);
+                if (file.type !== 'application/pdf') {
+                    alert('Please upload a PDF file!');
+                    return;
+                }
+                if (inputtedFiles.includes(file)) {
+                    alert('You have already uploaded this file!');
+                }
+                else {
+                    handleFileUpload(file, fileDrop);
+                }
+				
 			});
 		}
 	};
 
-	// functions
 	/**
 	 *
 	 * @param file
@@ -142,12 +162,35 @@
 		// element.innerHTML = '<h1 class="text-white">Uploaded</h1>';
 		console.log('Uploaded file:', file);
 
-		inputtedFiles = [...inputtedFiles, file];
+        // create a set from the inputted files
+        const inputtedFileNames = inputtedFiles.map((f) => f.name);
+        const fileNamesSet = new Set(inputtedFileNames);
+
+        // if the file is already in the set, don't add it
+        if (fileNamesSet.has(file.name)) {
+            alert('You have already uploaded this file!');
+            return;
+        }
+        else {
+            inputtedFiles = [...inputtedFiles, file];
+        }
+        
+
+		
 		// Add your file handling logic here
 	};
 
+	const onDoctorFileSubmit = () => {
+		createDoctorPortal();
+		// this is just a test
+		doctorDashboard = true;
+	};
+
 	const deleteFile = (/** @type {File} */ file) => {
-		if (inputtedFiles.length > 0) {
+        if (inputtedFiles.length == 1) {
+            inputtedFiles = [];
+        }
+		if (inputtedFiles.length > 1) {
 			inputtedFiles = inputtedFiles.filter((f) => f.name !== file.name);
 		}
 	};
@@ -170,8 +213,9 @@
 			if (formData['account_type'] === 'doctor') {
 				doctorPortal = true;
 			} else {
-				userPortal = true;
+				patientPortal = true;
 			}
+			name = formData['name'].toString();
 		}
 	};
 
@@ -189,25 +233,27 @@
 				block: 'start' // 'start', 'center', 'end', or 'nearest'
 			});
 		}
-		createPatientPortal();
+		if (element === 'user') {
+			createPatientPortal();
+		}
 	};
 
 	const createPatientPortal = () => {
 		// this is just a test
-        let patient = new Patient(patientID);
-        if (pageLoaded) {
-            const { chartID, options } = patient.createLineChart();
-            createChart(chartID, options);
-        }
+		let patient = new Patient(patientID);
+		if (pageLoaded) {
+			const { chartID, options } = patient.createLineChart();
+			createChart(chartID, options);
+		}
 	};
 
-    const createDoctorPortal = () => {
+	const createDoctorPortal = () => {
 		// this is just a test
-        let patient = new Patient(patientID);
-        if (pageLoaded) {
-            const { chartID, options } = patient.createLineChart();
-            createChart(chartID, options);
-        }
+		let patient = new Patient(patientID);
+		if (pageLoaded) {
+			const { chartID, options } = patient.createLineChart();
+			createChart(chartID, options);
+		}
 	};
 
 	/**
@@ -255,7 +301,7 @@
 			<h1 class="text-white font-bold text-5xl">MedLingua</h1>
 		</div>
 		<div class="hidden md:flex items-center">
-			{#if !(doctorPortal || userPortal)}
+			{#if !(doctorPortal || patientPortal)}
 				<button
 					class="flex items-center justify-center bg-blue-500 hover:bg-blue-800 text-white px-6 font-bold text-xl md:text-3xl py-3 rounded-full transition duration-300 transform hover:scale-105"
 					on:click={() => (loginPopup = true)}
@@ -265,14 +311,14 @@
 			{:else}
 				<div class="flex items-center justify-center text-2xl text-white">
 					<h1>
-						Hi, {#if userPortal} User! {:else} Doctor! {/if}
+						Hi, {name}!
 					</h1>
 				</div>
 				<button
 					class="flex ml-5 items-center justify-center bg-gray-500 hover:bg-blue-800 text-white px-4 font-bold text-xl md:text-xl py-3 rounded-full transition duration-300 transform hover:scale-105"
-					on:click={() => ((userPortal = false), (doctorPortal = false), (loginPopup = true))}
+					on:click={() => ((patientPortal = false), (doctorPortal = false), (loginPopup = true))}
 				>
-					<span class="p-0">Sign Out</span>
+					<span class="p-0 text-white">Sign Out</span>
 				</button>
 			{/if}
 		</div>
@@ -372,6 +418,20 @@
 							</div>
 							<div>
 								<label
+									for="name"
+									class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label
+								>
+								<input
+									type="name"
+									name="name"
+									id="name"
+									class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+									placeholder="John Doe"
+									required
+								/>
+							</div>
+							<div>
+								<label
 									for="email"
 									class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
 									>Your email</label
@@ -444,79 +504,102 @@
 
 {#if doctorPortal}
 	<div
-		id="doctor_portal"
-		class="min-h-screen bg-gradient-to-b from-pink-400 to-red-500 flex items-center justify-center"
 	>
-		<div class="flex flex-col justify-around gap-y-10">
-			<div class="flex flex-col gap-y-5 items-center">
-				<label for="patient-id" class="block mt-5 text-xl text-white">Patient ID:</label>
-				<input
-					type="text"
-					id="patient-id"
-                    bind:value={patientID}
-					class="w-full border bg-white border-gray-300 rounded-lg px-3 py-2"
-				/>
-			</div>
-			<h1 class="text-white font-bold text-5xl">Patient File Upload</h1>
-			<div class="bg-white p-10 rounded-lg shadow-lg">
-				<label for="file-upload" class="block text-xl mb-4 text-center"
-					>Drag and Drop Your Medical Notes</label
-				>
-				<input type="file" id="file-upload" class="hidden" />
-				<div
-					id="file-drop"
-					class="w-full h-32 border-2 border-white-400 flex items-center justify-center"
-				>
-					<p class="text-gray-600">Drop your file here</p>
+		{#if !doctorDashboard}
+        <div
+		id="doctor_portal"
+		class="min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d] flex items-center justify-center"
+	>
+			<div class="flex flex-col justify-around gap-y-10">
+				<div class="flex flex-col gap-y-5 items-center">
+					<label for="patient-id" class="block mt-5 text-xl text-white">Patient ID:</label>
+					<input
+						type="text"
+						id="patient-id"
+						bind:value={patientID}
+						placeholder="123456789"
+						class="w-full border bg-white border-gray-300 rounded-lg px-3 py-2"
+					/>
 				</div>
-				<div id="uploaded_doctors_notes" class={isFileHidden}>
-					<p class="font-bold mt-5">Uploaded Files:</p>
-
-					<ul
-						class="w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+				<h1 class="text-white font-bold text-5xl">Patient File Upload</h1>
+				<div class="bg-white p-10 rounded-lg shadow-lg">
+					<label for="file-upload" class="block text-xl mb-4 text-center"
+						>Drag and Drop Your Medical Notes</label
 					>
-						{#each inputtedFiles as file}
-							<li
-								class="w-full px-4 py-2 border-b border-gray-200 rounded-t-lg dark:border-gray-600"
-							>
-								{file.name}
-								<button on:click={() => deleteFile(file)}
-									><i class="pl-2 fa-solid fa-trash" /></button
-								>
-							</li>
-						{/each}
-					</ul>
+					<input type="file" id="file-upload" class="hidden" />
+					<div
+						id="file-drop"
+						class="w-full h-32 border-2 border-white-400 flex items-center justify-center"
+					>
+						<p class="text-gray-600">Drop your file here</p>
+					</div>
+					<div id="uploaded_doctors_notes" class="flex justify-center flex-col {isFileHidden}">
+						<p class="font-bold mt-5 text-gray-900">Uploaded Files:</p>
+
+						<ul
+							class="mt-3 w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						>
+							{#each inputtedFiles as file}
+                            <div class="flex justify-between w-full px-4 py-2 border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+                                {file.name}
+                                <button on:click={() => deleteFile(file)}
+                                    ><i class="pl-2 fa-solid fa-trash" /></button
+                                >
+                            </div>
+
+							{/each}
+						</ul>
+						<button on:click={() => onDoctorFileSubmit()} class="mt-3 rounded-lg bg-blue-800 text-white px-6 py-3 text-center"
+							>Submit</button
+						>
+					</div>
 				</div>
 			</div>
-		</div>
+            </div>
+            {:else}
+            <div class="flex flex-row min-h-screen bg-gradient-to-b from-[#43cea2] to-[#185a9d]">
+                <!-- Left side with graphs -->
+                <div class="w-1/2 flex flex-col justify-center">
+                  <!-- Graph 1 -->
+                  <div class="bg-white p-4 mb-4 rounded-lg shadow">
+                    <!-- Replace with your graph 1 image -->
+                    <img src="graph1.png" alt="Graph 1" class="w-full h-auto" />
+                  </div>
+                  <!-- Graph 2 -->
+                  <div class="bg-white p-4 mb-4 rounded shadow">
+                    <!-- Replace with your graph 2 image -->
+                    <img src="graph2.png" alt="Graph 2" class="w-full h-auto" />
+                  </div>
+                  <!-- Graph 3 -->
+                  <div class="bg-white p-4 mb-4 rounded shadow">
+                    <!-- Replace with your graph 3 image -->
+                    <img src="graph3.png" alt="Graph 3" class="w-full h-auto" />
+                  </div>
+                </div>
+              
+                <!-- Right side with text -->
+                <div class="w-1/2 flex flex-col justify-center p-6">
+                  <div class="flex">
+                    <h1 class="text-white text-2xl font-bold">Patient Dashboard</h1>
+                  </div>
+                  <div class="text-white mt-4">
+                    <!-- Insert your bunch of text here -->
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et turpis vel tellus porta tristique. Quisque
+                    vitae fermentum dolor. Donec eget ligula vel justo tempus pretium. Nunc ut convallis purus, nec tristique
+                    felis. ...
+                  </div>
+                </div>
+              </div>
+		{/if}
 	</div>
 {/if}
-{#if userPortal}
-<div id="user_portal" class="min-h-screen bg-gradient-to-b from-blue-400 to-indigo-500 flex flex-col items-center justify-center">
-    <h1 class="text-white text-5xl mb-10">Patient Portal</h1>
-    <div class="flex">
-        <ul class="w-48 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-            <li class="w-full px-4 py-2 border-b border-gray-200 rounded-t-lg dark:border-gray-600">Profile</li>
-            <li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">Settings</li>
-            <li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">Messages</li>
-            <li class="w-full px-4 py-2 rounded-b-lg">Download</li>
-        </ul>
-        <div class="flex flex-col justify-center gap-y-10">
-            <PatientList />
-          </div>
-    </div>
-    <div class="flex flex-row justify-start gap-x-10">
-      <!-- Left Column (Patient List) -->
-      <div class="flex flex-col justify-center gap-y-10">
-        <PatientList />
-      </div>
-  
-      <!-- Right Column (Chart or other content) -->
-      <div class="flex flex-col justify-center gap-y-10">
-        <!-- Add your chart or other content here -->
-      </div>
-    </div>
-  </div>
+{#if patientPortal}
+	<div
+		id="user_portal"
+		class="min-h-screen flex flex-col bg-gradient-to-b from-[#EB96FC] to-[#8C77E9]"
+	>
+		<UserPortal />
+	</div>
 {/if}
 
 <style>
